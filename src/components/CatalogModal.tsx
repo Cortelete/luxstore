@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { Modal } from './Modal';
 import { motion, AnimatePresence } from 'motion/react';
-import { ShoppingBag, ChevronDown, ChevronRight, Minus, Plus } from 'lucide-react';
+import { ShoppingBag, ChevronDown, ChevronRight, Minus, Plus, Search } from 'lucide-react';
 import { catalogData, Product } from '../data/catalog';
 
 interface CatalogModalProps {
@@ -11,6 +11,7 @@ interface CatalogModalProps {
 
 export function CatalogModal({ isOpen, onClose }: CatalogModalProps) {
   const [name, setName] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [quantities, setQuantities] = useState<Record<string, number>>({});
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(['Utensílios']));
 
@@ -24,6 +25,27 @@ export function CatalogModal({ isOpen, onClose }: CatalogModalProps) {
     });
     return products;
   }, []);
+
+  const filteredCatalogData = useMemo(() => {
+    if (!searchQuery.trim()) return catalogData;
+    const lowerQuery = searchQuery.toLowerCase();
+    
+    return catalogData.map(category => {
+      const filteredItems = category.items.filter(item => item.name.toLowerCase().includes(lowerQuery));
+      const filteredSubcategories = category.subcategories?.map(sub => {
+        return {
+          ...sub,
+          items: sub.items.filter(item => item.name.toLowerCase().includes(lowerQuery))
+        };
+      }).filter(sub => sub.items.length > 0);
+
+      return {
+        ...category,
+        items: filteredItems,
+        subcategories: filteredSubcategories?.length ? filteredSubcategories : undefined
+      };
+    }).filter(category => category.items.length > 0 || (category.subcategories && category.subcategories.length > 0));
+  }, [searchQuery]);
 
   const updateQuantity = (productId: string, delta: number) => {
     setQuantities(prev => {
@@ -138,9 +160,22 @@ export function CatalogModal({ isOpen, onClose }: CatalogModalProps) {
         
         <div className="flex-1 min-h-0 flex flex-col mb-3 sm:mb-4">
           <label className="block text-sm font-medium text-gray-300 mb-2 shrink-0">Selecione os produtos:</label>
+          <div className="relative mb-3 shrink-0">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={16} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Buscar produtos..."
+              className="w-full bg-black/40 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-sm text-white focus:outline-none focus:border-[#bf953f] transition-colors"
+            />
+          </div>
           <div className="space-y-2 overflow-y-auto pr-2 custom-scrollbar flex-1">
-            {catalogData.map((category) => {
-              const isExpanded = expandedCategories.has(category.title);
+            {filteredCatalogData.length === 0 && (
+              <p className="text-sm text-gray-400 text-center py-4">Nenhum produto encontrado.</p>
+            )}
+            {filteredCatalogData.map((category) => {
+              const isExpanded = searchQuery.trim() !== '' || expandedCategories.has(category.title);
               return (
                 <div key={category.title} className="bg-black/30 rounded-xl border border-white/5 overflow-hidden shrink-0">
                   <button

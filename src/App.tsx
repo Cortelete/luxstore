@@ -50,11 +50,6 @@ export default function App() {
       action: () => window.open('https://www.instagram.com/luxstorebeauty', '_blank'),
     },
     {
-      title: 'Catálogo',
-      icon: <ShoppingBag size={20} />,
-      action: () => openModal('catalog'),
-    },
-    {
       title: 'Contato',
       icon: <MessageCircle size={20} />,
       action: () => openModal('contact'),
